@@ -1,15 +1,73 @@
 const express = require("express");
+const fetch = require("node-fetch");
 const cors = require("cors");
 const mongoose = require("mongoose");
 const path = require("path");
+const bodyParser = require("body-parser");
 
 require("dotenv").config();
 
 const app = express();
+
+// Bodyparser Middleware
+app.use(bodyParser.urlencoded({ extended: true }));
+
+// Port for Heroku
 const port = process.env.PORT || 5000;
+
+// MailChimp Auth
+const mailchimpListId = process.env.MAILCHIMP_LIST_ID;
+const mailchimpDatabaseId = process.env.MAILCHIMP_DATABASE_ID;
+const mailchimpAPIkey = process.env.MAILCHIMP_APIKEY;
 
 app.use(cors());
 app.use(express.json());
+
+// Newsletter Setup
+app.post("/signup", (req, res) => {
+  const { email } = req.body;
+
+  // Make sure fields are filled
+  if (!email) {
+    res.sendFile(path.join(__dirname, "/fail.html"));
+    return;
+  }
+
+  // Construct req data
+  const data = {
+    members: [
+      {
+        email_address: email,
+        status: "subscribed",
+      },
+    ],
+  };
+
+  const postData = JSON.stringify(data);
+
+  // POST Data to the Mailchimp database
+  // To Post Data to MailChimp we will need a Mailchimp DATABASE ID, Mailchimp LIST ID and a Mailchimp API Key
+
+  fetch(
+    `https://${mailchimpDatabaseId}.api.mailchimp.com/3.0/lists/${mailchimpListId}`,
+    {
+      method: "POST",
+      headers: {
+        // generate a new key from here https://<YOUR-MAIL-CHIMP-DATABASE-ID>.admin.mailchimp.com/account/api/
+        Authorization: `auth ${mailchimpAPIkey}`,
+      },
+      body: postData,
+    }
+  ).then(
+    res.statusCode === 200
+      ? res.sendFile(path.join(__dirname, "/success.html"))
+      : res
+          .sendFile(path.join(__darname, "/fail.html"))
+          .catch((err) => console.log(err))
+  );
+});
+
+// Database Setup
 
 const uri = process.env.ATLAS_URI;
 mongoose.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true });
