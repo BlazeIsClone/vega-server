@@ -4,6 +4,7 @@ const cors = require("cors");
 const mongoose = require("mongoose");
 const path = require("path");
 const bodyParser = require("body-parser");
+const nodemailer = require("nodemailer");
 
 require("dotenv").config();
 
@@ -65,6 +66,60 @@ app.post("/signup", (req, res) => {
           .sendFile(path.join(__darname, "/fail.html"))
           .catch((err) => console.log(err))
   );
+});
+
+// Form Handler
+const emailHost = process.env.EMAIL_HOST;
+const emailUsername = process.env.EMAIL_USERNAME;
+const emailPassword = process.env.EMAIL_PASSWORD;
+
+// async..await is not allowed in global scope, must use a wrapper
+app.post("/enquiry", (req, res) => {
+  async function main() {
+    // Generate test SMTP service account from ethereal.email
+    // Only needed if you don't have a real mail account for testing
+    let testAccount = await nodemailer.createTestAccount();
+
+    // create reusable transporter object using the default SMTP transport
+    let transporter = nodemailer.createTransport({
+      service: emailHost,
+      secure: false, // true for 465, false for other ports
+      auth: {
+        user: emailUsername, // generated ethereal user
+        pass: emailPassword, // generated ethereal password
+      },
+    });
+
+    // send mail to Domain Receiver with defined transport object
+    await transporter
+      .sendMail({
+        from: `${req.body.name}`, // sender address
+        to: "blazeracer1299@gmail.com", // list of receivers
+        subject: "Vega Website Enquiry", // Subject line
+        html: `
+      <p>Sender Name: <h2>${req.body.name}</h2></p>
+      <p>Sender Email: <h2>${req.body.email}</h2></p>
+      <p>${req.body.message}</p>
+      `, // html body
+      })
+
+      // send mail to Sender
+      .then(async () => {
+        await transporter.sendMail({
+          from: `Vega Innovations`, // sendr address
+          to: `${req.body.email}`, // list of receivers
+          subject: "Thank You!, we will get back to you ASAP", // Subject line
+          html: `
+      <h2>Hello! ${req.body.name}</h2>
+      <p>Thank you for contacting us, we will get back to you as soon as possible through this email.</p>
+      `, // html body
+        });
+      });
+
+    console.log("Request sent");
+  }
+
+  main().catch(console.error);
 });
 
 // Database Setup
