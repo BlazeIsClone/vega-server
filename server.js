@@ -74,7 +74,7 @@ const emailUsername = process.env.EMAIL_USERNAME;
 const emailPassword = process.env.EMAIL_PASSWORD;
 
 // async..await is not allowed in global scope, must use a wrapper
-app.post("/enquiry", (req, res) => {
+app.post("/contact", (req, res) => {
   async function main() {
     // Generate test SMTP service account from ethereal.email
     // Only needed if you don't have a real mail account for testing
@@ -106,9 +106,9 @@ app.post("/enquiry", (req, res) => {
       // send mail to Sender
       .then(async () => {
         await transporter.sendMail({
-          from: `Vega Innovations`, // sendr address
+          from: `Vega Innovations <vega@noreply.com>`, // sendr address
           to: `${req.body.email}`, // list of receivers
-          subject: "Thank You!, we will get back to you ASAP", // Subject line
+          subject: "We received your email!", // Subject line
           html: `
       <h2>Hello! ${req.body.name}</h2>
       <p>Thank you for contacting us, we will get back to you as soon as possible through this email.</p>
@@ -116,7 +116,11 @@ app.post("/enquiry", (req, res) => {
         });
       });
 
-    console.log("Request sent");
+    if (!req.body.name && !req.body.email && !req.body.message) {
+      return console.log("no reqest sent: Invalid Credentials");
+    } else {
+      console.log("Request sent");
+    }
   }
 
   main().catch(console.error);
