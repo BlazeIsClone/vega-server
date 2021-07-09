@@ -5,6 +5,7 @@ const mongoose = require("mongoose");
 const path = require("path");
 const bodyParser = require("body-parser");
 const nodemailer = require("nodemailer");
+const { google } = require("googleapis");
 
 require("dotenv").config();
 
@@ -69,61 +70,79 @@ app.post("/signup", (req, res) => {
 });
 
 // Form Handler
-const emailHost = process.env.EMAIL_HOST;
 const emailUsername = process.env.EMAIL_USERNAME;
-const emailPassword = process.env.EMAIL_PASSWORD;
+const emailApiClientId = process.env.EMAIL_CLIENT_ID;
 
-// async..await is not allowed in global scope, must use a wrapper
+const OAuth2 = google.auth.OAuth2;
+
 app.post("/contact", (req, res) => {
-  async function main() {
-    // Generate test SMTP service account from ethereal.email
-    // Only needed if you don't have a real mail account for testing
-    let testAccount = await nodemailer.createTestAccount();
+  const oauth2Client = new OAuth2(
+    "732129209237-ghmg0ufi0761n3o8b3b8nh26ak0830ij.apps.googleusercontent.com", // ClientID
+    "m5KYcqMOy6sbDPWk6G07uuFR", // Client Secret
+    "https://developers.google.com/oauthplayground" // Redirect URL
+  );
 
-    // create reusable transporter object using the default SMTP transport
-    let transporter = nodemailer.createTransport({
-      service: emailHost,
-      secure: false, // true for 465, false for other ports
-      auth: {
-        user: emailUsername, // generated ethereal user
-        pass: emailPassword, // generated ethereal password
-      },
-    });
+  oauth2Client.setCredentials({
+    refresh_token:
+      "1//04drlgwzRywB9CgYIARAAGAQSNwF-L9Ir-gQDj6UNj1Xic5_jBDe_TyJCW4LXQh6GMo6D7UY_O7k6rpI0ax66KdZpz75WfbJ7MAc",
+  });
+  const accessToken = oauth2Client.getAccessToken();
 
-    // send mail to Domain Receiver with defined transport object
-    await transporter
-      .sendMail({
-        from: `${req.body.name}`, // sender address
-        to: "blazeracer1299@gmail.com", // list of receivers
-        subject: "Vega Website Enquiry", // Subject line
-        html: `
+  // create reusable transporter object using the default SMTP transport
+  let smtpTransport = nodemailer.createTransport({
+    host: "smtp.gmail.com",
+    service: "gmail",
+    auth: {
+      type: "OAuth2",
+      user: "blazeracer1299@gmail.com",
+      clientId:
+        "732129209237-ghmg0ufi0761n3o8b3b8nh26ak0830ij.apps.googleusercontent.com",
+      clientSecret: "m5KYcqMOy6sbDPWk6G07uuFR",
+      refreshToken:
+        "1//04drlgwzRywB9CgYIARAAGAQSNwF-L9Ir-gQDj6UNj1Xic5_jBDe_TyJCW4LXQh6GMo6D7UY_O7k6rpI0ax66KdZpz75WfbJ7MAc",
+      accessToken: accessToken,
+    },
+    tls: {
+      rejectUnauthorized: false,
+    },
+  });
+
+  // send mail to Domain Receiver with defined transport object
+  const mailOptionServer = {
+    from: `${req.body.name}`, // sender address
+    to: "blazeracer1299@gmail.com", // list of receivers
+    subject: "Vega Website Enquiry", // Subject line
+    generateTextFromHTML: true,
+    html: `
       <p>Sender Name: <h2>${req.body.name}</h2></p>
       <p>Sender Email: <h2>${req.body.email}</h2></p>
       <p>${req.body.message}</p>
       `, // html body
-      })
+  };
 
-      // send mail to Sender
-      .then(async () => {
-        await transporter.sendMail({
-          from: `Vega Innovations <vega@noreply.com>`, // sendr address
-          to: `${req.body.email}`, // list of receivers
-          subject: "We received your email!", // Subject line
-          html: `
+  // send mail to Sender
+  const mailOptionClient = {
+    from: `Vega Innovations <vega@noreply.com>`, // sendr address
+    to: `${req.body.email}`, // list of receivers
+    subject: "We received your email!", // Subject line
+    generateTextFromHTML: true,
+    html: `
       <h2>Hello! ${req.body.name}</h2>
       <p>Thank you for contacting us, we will get back to you as soon as possible through this email.</p>
       `, // html body
-        });
-      });
+  };
 
-    if (!req.body.name && !req.body.email && !req.body.message) {
-      return console.log("no reqest sent: Invalid Credentials");
-    } else {
-      console.log("Request sent");
-    }
-  }
+  // Send Mail to Server(response party)
+  smtpTransport.sendMail(mailOptionServer, (error, response) => {
+    error ? console.log(error) : console.log(response);
+    smtpTransport.close();
+  });
 
-  main().catch(console.error);
+  // Send Mail to Client(reqest party)
+  smtpTransport.sendMail(mailOptionClient, (error, response) => {
+    error ? console.log(error) : console.log(response);
+    smtpTransport.close();
+  });
 });
 
 // Database Setup
