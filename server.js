@@ -70,21 +70,22 @@ app.post("/signup", (req, res) => {
 });
 
 // Form Handler
-const emailUsername = process.env.EMAIL_USERNAME;
-const emailApiClientId = process.env.EMAIL_CLIENT_ID;
+const emailApiUsername = process.env.EMAIL_API_USERNAME;
+const emailApiClientId = process.env.EMAIL_API_CLIENT_ID;
+const emailApiClientSecret = process.env.EMAIL_API_CLIENT_SECRET;
+const emailApiRefreshToken = process.env.EMAIL_API_REFRESH_TOKEN;
 
 const OAuth2 = google.auth.OAuth2;
 
 app.post("/contact", (req, res) => {
   const oauth2Client = new OAuth2(
-    "732129209237-ghmg0ufi0761n3o8b3b8nh26ak0830ij.apps.googleusercontent.com", // ClientID
-    "m5KYcqMOy6sbDPWk6G07uuFR", // Client Secret
+    emailApiClientId, // ClientID
+    emailApiClientSecret, // Client Secret
     "https://developers.google.com/oauthplayground" // Redirect URL
   );
 
   oauth2Client.setCredentials({
-    refresh_token:
-      "1//04drlgwzRywB9CgYIARAAGAQSNwF-L9Ir-gQDj6UNj1Xic5_jBDe_TyJCW4LXQh6GMo6D7UY_O7k6rpI0ax66KdZpz75WfbJ7MAc",
+    refresh_token: emailApiRefreshToken,
   });
   const accessToken = oauth2Client.getAccessToken();
 
@@ -94,12 +95,10 @@ app.post("/contact", (req, res) => {
     service: "gmail",
     auth: {
       type: "OAuth2",
-      user: "blazeracer1299@gmail.com",
-      clientId:
-        "732129209237-ghmg0ufi0761n3o8b3b8nh26ak0830ij.apps.googleusercontent.com",
-      clientSecret: "m5KYcqMOy6sbDPWk6G07uuFR",
-      refreshToken:
-        "1//04drlgwzRywB9CgYIARAAGAQSNwF-L9Ir-gQDj6UNj1Xic5_jBDe_TyJCW4LXQh6GMo6D7UY_O7k6rpI0ax66KdZpz75WfbJ7MAc",
+      user: emailApiUsername,
+      clientId: emailApiClientId,
+      clientSecret: emailApiClientSecret,
+      refreshToken: emailApiRefreshToken,
       accessToken: accessToken,
     },
     tls: {
