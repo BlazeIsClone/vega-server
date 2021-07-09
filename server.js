@@ -132,16 +132,28 @@ app.post("/contact", (req, res) => {
   };
 
   // Send Mail to Server(response party)
-  smtpTransport.sendMail(mailOptionServer, (error, response) => {
-    error ? console.log(error) : console.log(response);
-    smtpTransport.close();
-  });
+  (async () => {
+    smtpTransport.sendMail(mailOptionServer, (error, response) => {
+      error ? console.log(error) : console.log(response);
+      smtpTransport.close();
+    });
+  })()
+    .then(() => {
+      if (res.statusCode === 200) {
+        res.sendFile(path.join(__dirname, "/success.html"));
+      } else {
+        res.sendFile(path.join(__dirname, "/fail.html"));
+      }
+    })
+    .catch(console.error);
 
   // Send Mail to Client(reqest party)
-  smtpTransport.sendMail(mailOptionClient, (error, response) => {
-    error ? console.log(error) : console.log(response);
-    smtpTransport.close();
-  });
+  (async () => {
+    smtpTransport.sendMail(mailOptionClient, (error, response) => {
+      error ? console.log(error) : console.log(response);
+      smtpTransport.close();
+    });
+  })();
 });
 
 // Database Setup
